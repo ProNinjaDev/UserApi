@@ -4,6 +4,7 @@ namespace UserApi.Services {
     public class MemoryUserService : IUserService {
 
         private readonly Dictionary<Guid, User> _users = new Dictionary<Guid, User>();
+        private readonly Dictionary<string, Guid> _logins = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
 
         public MemoryUserService() {
             var adminGuid = Guid.NewGuid();
@@ -23,10 +24,15 @@ namespace UserApi.Services {
                 RevokedBy = null
             };
             _users.Add(adminGuid, adminUser);
+            _logins.Add(adminUser.Login, adminGuid);
         }
         public Task<User?> CreateUserAsync(string login, string password, string name, int gender, DateTime? birthday, bool isAdmin, string createdBy) {
+            if (_logins.ContainsKey(login)) {
+                Console.WriteLine("This login is already taken");
+                return Task.FromResult<User?>(null);
+            }
+            
             var newUserGuid = Guid.NewGuid();
-
             var newUser = new User {
                 Guid = newUserGuid,
                 Login = login,
@@ -44,6 +50,7 @@ namespace UserApi.Services {
             };
 
             _users.Add(newUserGuid, newUser);
+            _logins.Add(newUser.Login, newUserGuid);
 
             return Task.FromResult<User?>(newUser);
         }

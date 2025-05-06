@@ -3,6 +3,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddSingleton<UserApi.Services.IUserService, UserApi.Services.MemoryUserService>();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
