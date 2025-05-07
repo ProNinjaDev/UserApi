@@ -54,5 +54,19 @@ namespace UserApi.Services {
 
             return Task.FromResult<User?>(newUser);
         }
+
+        public Task<IEnumerable<User>> GetAllUsersAsync() {
+            return Task.FromResult(_users.Values.ToList() as IEnumerable<User>);
+        }
+
+        public Task<User?> GetUserByLoginAsync(string login) {
+            if (_logins.ContainsKey(login)) {
+                Guid userId = _logins[login];
+                if(_users.TryGetValue(userId, out User? user)) {
+                    return Task.FromResult<User?>(user);
+                }
+            }
+            return Task.FromResult<User?>(null);
+        }
     }
 }
