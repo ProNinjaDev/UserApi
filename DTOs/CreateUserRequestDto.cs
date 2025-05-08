@@ -22,7 +22,6 @@ namespace UserApi.DTOs {
         [Range(0, 2, ErrorMessage = "Gender must be 0, 1 or 2")]
         public int Gender { get; set; }
 
-        [Required(ErrorMessage = "Birtday is required")]
         public DateTime? Birthday { get; set; }
 
         [Required(ErrorMessage = "Admin status is required")]
