@@ -1,4 +1,5 @@
 using UserApi.Models;
+using UserApi.DTOs;
 
 namespace UserApi.Services {
     public class MemoryUserService : IUserService {
@@ -26,8 +27,8 @@ namespace UserApi.Services {
             _users.Add(adminGuid, adminUser);
             _logins.Add(adminUser.Login, adminGuid);
         }
-        public Task<User?> CreateUserAsync(string login, string password, string name, int gender, DateTime? birthday, bool isAdmin, string createdBy) {
-            if (_logins.ContainsKey(login)) {
+        public Task<User?> CreateUserAsync(CreateUserRequestDto createUserDto, string createdBy) {
+            if (_logins.ContainsKey(createUserDto.Login)) {
                 Console.WriteLine("This login is already taken");
                 return Task.FromResult<User?>(null);
             }
@@ -35,12 +36,12 @@ namespace UserApi.Services {
             var newUserGuid = Guid.NewGuid();
             var newUser = new User {
                 Guid = newUserGuid,
-                Login = login,
-                Password = password, // todo: хешировать пароль
-                Name = name,
-                Gender = gender,
-                Birthday = birthday,
-                Admin = isAdmin,
+                Login = createUserDto.Login,
+                Password = createUserDto.Password, // todo: хешировать пароль
+                Name = createUserDto.Name,
+                Gender = createUserDto.Gender,
+                Birthday = createUserDto.Birthday,
+                Admin = createUserDto.Admin,
                 CreatedOn = DateTime.UtcNow,
                 CreatedBy = createdBy,
                 ModifiedOn = DateTime.UtcNow,
@@ -56,7 +57,7 @@ namespace UserApi.Services {
         }
 
         public Task<IEnumerable<User>> GetAllUsersAsync() {
-            return Task.FromResult(_users.Values.ToList() as IEnumerable<User>);
+            return Task.FromResult(_users.Values.Where(u => u.RevokedOn == null).OrderBy(u => u.CreatedOn).AsEnumerable());
         }
 
         public Task<User?> GetUserByLoginAsync(string login) {
