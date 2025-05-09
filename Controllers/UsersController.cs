@@ -18,6 +18,10 @@ namespace UserApi.Controllers {
         public async Task<ActionResult<IEnumerable<UserResponseDto>>> GetAllUsers() {
             var users = await _userService.GetAllUsersAsync();
 
+            if (users == null) {
+                return Ok(Enumerable.Empty<UserResponseDto>());
+            }
+
             var userResponseDtos = users.Select(user => new UserResponseDto {
                 Guid = user.Guid,
                 Login = user.Login,
@@ -28,7 +32,7 @@ namespace UserApi.Controllers {
                 CreatedOn = user.CreatedOn,
                 IsActive = user.RevokedOn == null
             });
-            return Ok(users);
+            return Ok(userResponseDtos);
         }
 
         // GET: api/users/{login}
