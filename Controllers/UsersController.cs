@@ -15,20 +15,46 @@ namespace UserApi.Controllers {
 
         // GET: api/users
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<User>>> GetAllUsers() {
+        public async Task<ActionResult<IEnumerable<UserResponseDto>>> GetAllUsers() {
             var users = await _userService.GetAllUsersAsync();
-            return Ok(users); // todo: переделать в DTO ответа
+
+            if (users == null) {
+                return Ok(Enumerable.Empty<UserResponseDto>());
+            }
+
+            var userResponseDtos = users.Select(user => new UserResponseDto {
+                Guid = user.Guid,
+                Login = user.Login,
+                Name = user.Name,
+                Gender = user.Gender,
+                Birthday = user.Birthday,
+                Admin = user.Admin,
+                CreatedOn = user.CreatedOn,
+                IsActive = user.RevokedOn == null
+            });
+            return Ok(userResponseDtos);
         }
 
         // GET: api/users/{login}
         [HttpGet("{login}")] 
-        public async Task<ActionResult<User>> GetUserByLogin([FromRoute] string login) {
+        public async Task<ActionResult<UserResponseDto>> GetUserByLogin([FromRoute] string login) {
             var user = await _userService.GetUserByLoginAsync(login);
             
             if (user == null) {
                 return NotFound();
             }
-            return Ok(user); // todo: переделать в DTO ответа
+
+            var userResponseDto = new UserResponseDto {
+                Guid = user.Guid,
+                Login = user.Login,
+                Name = user.Name,
+                Gender = user.Gender,
+                Birthday = user.Birthday,
+                Admin = user.Admin,
+                CreatedOn = user.CreatedOn,
+                IsActive = user.RevokedOn == null
+            };
+            return Ok(userResponseDto);
         }
 
         // POST: api/users
