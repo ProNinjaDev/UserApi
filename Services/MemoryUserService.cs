@@ -62,12 +62,46 @@ namespace UserApi.Services {
 
         public Task<User?> GetUserByLoginAsync(string login) {
             if (_logins.ContainsKey(login)) {
-                Guid userId = _logins[login];
+                Guid userId = _logins[login]; // todo: заменить на TryGetValue (а может и не надо)
                 if(_users.TryGetValue(userId, out User? user)) {
                     return Task.FromResult<User?>(user);
                 }
             }
             return Task.FromResult<User?>(null);
+        }
+
+        Task<User?> UpdateUserInfoAsync(string login, UpdateUserInfoRequestDto updateUserDto, string modifiedBy) {
+            if (!_logins.TryGetValue(login, out Guid userId)) {
+                return Task.FromResult<User?>(null);
+            }
+
+            if (!_users.TryGetValue(userId, out User? user)) {
+                return Task.FromResult<User?>(null);
+            }
+
+            bool isModified = false; // для null отслеживания
+
+            if (updateUserDto.Name != null) {
+                user.Name = updateUserDto.Name;
+                isModified = true;
+            }
+            if (updateUserDto.Gender != null) {
+                user.Gender = updateUserDto.Gender.Value;
+                isModified = true;
+            }
+            if (updateUserDto.Birthday != null) { // todo: возможно, лучше создать новый эндпоинт для обработки др
+                if (user.Birthday != updateUserDto.Birthday.Value) { // др не очищается
+                    user.Birthday = updateUserDto.Birthday.Value;
+                    isModified = true;
+                }
+            }
+
+            if (isModified) {
+                user.ModifiedBy = modifiedBy;
+                user.ModifiedOn = DateTime.UtcNow;
+            }
+
+            return Task.FromResult<User?>(user);
         }
     }
 }
