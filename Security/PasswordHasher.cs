@@ -32,6 +32,22 @@ namespace UserApi.Security {
             };
         }
 
-        
+        public static bool IsMatchPasswords(string password, byte[] storedHash, byte[] storedSalt, int storedIterations, string storedAlgorithm) {
+            if (string.IsNullOrWhiteSpace(password))
+                return false;
+            if (storedHash == null || storedSalt == null)
+                return false;
+            if (storedHash.Length != HashSize)
+                return false;
+            if(storedSalt.Length != SaltSize)
+                return false;
+            if(storedAlgorithm != NameAlgorithm)
+                return false;
+            
+            var keyDeriverVerify = new Rfc2898DeriveBytes(password, storedSalt, storedIterations, HashAlgorithmName.SHA256);
+            byte[] hashVerify = keyDeriverVerify.GetBytes(storedHash.Length);
+
+            return CryptographicOperations.FixedTimeEquals(hashVerify, storedHash);
+        }
     }
 }
