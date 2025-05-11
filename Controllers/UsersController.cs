@@ -84,5 +84,74 @@ namespace UserApi.Controllers {
             // 201 Created и ссылочку на созданный ресурс и сам ресурс
             return CreatedAtAction(nameof(GetUserByLogin), new { login = userResponseDto.Login }, userResponseDto); 
         }
+
+        // PUT: api/users/{login} 
+        [HttpPut("{login}")]
+        public async Task<IActionResult> UpdateUserInfo([FromRoute] string login,
+            [FromBody] UpdateUserInfoRequestDto updateUserDto) {
+
+            if (!ModelState.IsValid) {
+                return BadRequest(ModelState);
+            }
+
+            var currentUserLogin = "Admin"; // todo: заменить при аутентификации
+            var userExisting = await _userService.GetUserByLoginAsync(login);
+            if(userExisting == null) {
+                return NotFound("User not found");
+            }
+
+            // todo: добавить проверки при аутентификации
+            var userUpdated = await _userService.UpdateUserInfoAsync(login, updateUserDto, currentUserLogin);
+
+            return NoContent();
+        }
+
+        // PUT: api/users/{login}/password
+        [HttpPut("{login}/password")]
+        public async Task<IActionResult> UpdateUserPassword([FromRoute] string login,
+            [FromBody] UpdateUserPasswordRequestDto updatePasswordDto) {
+            
+            if (!ModelState.IsValid) {
+                return BadRequest(ModelState);
+            }
+
+            var currentUserLogin = "Admin"; // todo: заменить после аутентификации
+
+            var userExisting = await _userService.GetUserByLoginAsync(login);
+            if(userExisting == null) {
+                return NotFound("User not found");
+            }
+
+            var userUpdated = await _userService.UpdateUserPasswordAsync(login, updatePasswordDto.NewPassword, currentUserLogin);
+            return NoContent();
+        }
+
+        // PUT: api/users/{login}/login
+        [HttpPut("{login}/login")]
+        public async Task<IActionResult> UpdateUserLogin([FromRoute] string login,
+            [FromBody] UpdateUserLoginRequestDto updateLoginDto) {
+            
+            if (!ModelState.IsValid) {
+                return BadRequest(ModelState);
+            }
+
+            var currentUserLogin = "Admin"; // todo: заменить после аутентификации
+            var userExisting = await _userService.GetUserByLoginAsync(login);
+            if(userExisting == null) {
+                return NotFound("User not found");
+            }
+
+            var userUpdated = await _userService.UpdateUserLoginAsync(login, updateLoginDto.NewLogin, currentUserLogin);
+            if(userUpdated == null) {
+                var checkNewLogin = await _userService.GetUserByLoginAsync(updateLoginDto.NewLogin);
+                if(checkNewLogin != null && !string.Equals(login, updateLoginDto.NewLogin, StringComparison.OrdinalIgnoreCase)) {
+                    return Conflict($"The new login '{updateLoginDto.NewLogin}' is already taken"); // 409
+                }
+                
+                return BadRequest($"Failed to update login for {login}");
+            }
+
+            return NoContent();
+        }
     }
 }

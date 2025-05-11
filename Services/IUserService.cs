@@ -10,5 +10,11 @@ namespace UserApi.Services
         Task<IEnumerable<User>> GetAllUsersAsync();
 
         Task<User?> GetUserByLoginAsync(string login);
+
+        Task<User?> UpdateUserInfoAsync(string login, UpdateUserInfoRequestDto updateUserDto, string modifiedBy);
+
+        Task<User?> UpdateUserPasswordAsync(string login, string newPassword, string modifiedBy);
+
+        Task<User?> UpdateUserLoginAsync(string oldLogin, string newLogin, string modifiedBy);
     }
 }
