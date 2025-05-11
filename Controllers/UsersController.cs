@@ -84,5 +84,26 @@ namespace UserApi.Controllers {
             // 201 Created и ссылочку на созданный ресурс и сам ресурс
             return CreatedAtAction(nameof(GetUserByLogin), new { login = userResponseDto.Login }, userResponseDto); 
         }
+
+        // PUT: api/users/{login} 
+        [HttpPut("{login}")]
+        public async Task<IActionResult> UpdateUserInfo([FromRoute] string login,
+            [FromBody] UpdateUserInfoRequestDto updateUserDto) {
+
+            if (!ModelState.IsValid) {
+                return BadRequest(ModelState);
+            }
+
+            var currentUserLogin = "Admin"; // todo: заменить при аутентификации
+            var userExisting = await _userService.GetUserByLoginAsync(login);
+            if(userExisting == null) {
+                return NotFound("User not found");
+            }
+
+            // todo: добавить проверки при аутентификации
+            var userUpdated = await _userService.UpdateUserInfoAsync(login, updateUserDto, currentUserLogin);
+
+            return NoContent();
+        }
     }
 }

@@ -70,7 +70,7 @@ namespace UserApi.Services {
             return Task.FromResult<User?>(null);
         }
 
-        Task<User?> UpdateUserInfoAsync(string login, UpdateUserInfoRequestDto updateUserDto, string modifiedBy) {
+        public Task<User?> UpdateUserInfoAsync(string login, UpdateUserInfoRequestDto updateUserDto, string modifiedBy) {
             if (!_logins.TryGetValue(login, out Guid userId)) {
                 return Task.FromResult<User?>(null);
             }
