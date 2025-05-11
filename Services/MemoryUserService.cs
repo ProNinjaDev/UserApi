@@ -119,5 +119,38 @@ namespace UserApi.Services {
 
             return await Task.FromResult(user);
         }
+
+        public async Task<User?> UpdateUserLoginAsync(string oldLogin, string newLogin, string modifiedBy) {
+            // Из-за игнора регистра дополнительные проверки
+            if (string.Equals(oldLogin, newLogin, StringComparison.OrdinalIgnoreCase)) {
+                if (!_logins.TryGetValue(oldLogin, out Guid userIdNoChange) || !_users.TryGetValue(userIdNoChange, out User? userNoChange)) {
+                    return null;
+                }
+                userNoChange.ModifiedBy = modifiedBy;
+                userNoChange.ModifiedOn = DateTime.UtcNow;
+                return await Task.FromResult(userNoChange);
+            }
+            
+            if (_logins.ContainsKey(newLogin)) {
+                return null; // todo: подумать над отдельным ислкючением
+            }
+            
+            if (!_logins.TryGetValue(oldLogin, out Guid userId)) {
+                return null;
+            }
+
+            if (!_users.TryGetValue(userId, out User? user)) {
+                return null;
+            }
+            
+            _logins.Remove(oldLogin);
+            user.Login = newLogin;
+            _logins.Add(newLogin, user.Guid);
+
+            user.ModifiedBy = modifiedBy;
+            user.ModifiedOn = DateTime.UtcNow;
+            
+            return await Task.FromResult(user);
+        }
     }
 }
