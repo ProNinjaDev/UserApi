@@ -105,5 +105,25 @@ namespace UserApi.Controllers {
 
             return NoContent();
         }
+
+        // PUT: api/users/{login}/password
+        [HttpPut("{login}/password")]
+        public async Task<IActionResult> UpdateUserPassword([FromRoute] string login,
+            [FromBody] UpdateUserPasswordRequestDto updatePasswordDto) {
+            
+            if (!ModelState.IsValid) {
+                return BadRequest(ModelState);
+            }
+
+            var currentUserLogin = "Admin"; // todo: заменить после аутентификации
+
+            var userExisting = await _userService.GetUserByLoginAsync(login);
+            if(userExisting == null) {
+                return NotFound("User not found");
+            }
+
+            var userUpdated = await _userService.UpdateUserPasswordAsync(login, updatePasswordDto.NewPassword, currentUserLogin);
+            return NoContent();
+        }
     }
 }

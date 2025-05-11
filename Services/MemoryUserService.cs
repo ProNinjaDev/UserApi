@@ -70,13 +70,13 @@ namespace UserApi.Services {
             return Task.FromResult<User?>(null);
         }
 
-        public Task<User?> UpdateUserInfoAsync(string login, UpdateUserInfoRequestDto updateUserDto, string modifiedBy) {
+        public async Task<User?> UpdateUserInfoAsync(string login, UpdateUserInfoRequestDto updateUserDto, string modifiedBy) {
             if (!_logins.TryGetValue(login, out Guid userId)) {
-                return Task.FromResult<User?>(null);
+                return null;
             }
 
             if (!_users.TryGetValue(userId, out User? user)) {
-                return Task.FromResult<User?>(null);
+                return null;
             }
 
             bool isModified = false; // для null отслеживания
@@ -101,7 +101,23 @@ namespace UserApi.Services {
                 user.ModifiedOn = DateTime.UtcNow;
             }
 
-            return Task.FromResult<User?>(user);
+            return await Task.FromResult(user);
+        }
+
+        public async Task<User?> UpdateUserPasswordAsync(string login, string newPassword, string modifiedBy) {
+            if (!_logins.TryGetValue(login, out Guid userId)) {
+                return null;
+            }
+
+            if (!_users.TryGetValue(userId, out User? user)) {
+                return null;
+            }
+
+            user.Password = newPassword; // todo: хеширование паролей
+            user.ModifiedBy = modifiedBy;
+            user.ModifiedOn = DateTime.UtcNow;
+
+            return await Task.FromResult(user);
         }
     }
 }
