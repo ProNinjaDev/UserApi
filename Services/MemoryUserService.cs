@@ -1,5 +1,6 @@
 using UserApi.Models;
 using UserApi.DTOs;
+using UserApi.Security;
 
 namespace UserApi.Services {
     public class MemoryUserService : IUserService {
@@ -9,10 +10,15 @@ namespace UserApi.Services {
 
         public MemoryUserService() {
             var adminGuid = Guid.NewGuid();
+            var adminPassword = "Adminpassword555";
+            var hashedPassword = PasswordHasher.GenerateHashedPassword(adminPassword);
             var adminUser = new User {
                 Guid = adminGuid,
                 Login = "Admin",
-                Password = "Adminpassword555", // todo: хешировать парольчики
+                PasswordHash = hashedPassword.Hash,
+                PasswordSalt = hashedPassword.Salt,
+                PasswordIterations = hashedPassword.Iterations,
+                PasswordHashAlgorithm = hashedPassword.Algorithm,
                 Name = "Administrator",
                 Gender = 2,
                 Birthday = null,
@@ -27,17 +33,21 @@ namespace UserApi.Services {
             _users.Add(adminGuid, adminUser);
             _logins.Add(adminUser.Login, adminGuid);
         }
-        public Task<User?> CreateUserAsync(CreateUserRequestDto createUserDto, string createdBy) {
+        public async Task<User?> CreateUserAsync(CreateUserRequestDto createUserDto, string createdBy) {
             if (_logins.ContainsKey(createUserDto.Login)) {
                 Console.WriteLine("This login is already taken");
-                return Task.FromResult<User?>(null);
+                return null;
             }
             
+            var hashedPassword = PasswordHasher.GenerateHashedPassword(createUserDto.Password);
             var newUserGuid = Guid.NewGuid();
             var newUser = new User {
                 Guid = newUserGuid,
                 Login = createUserDto.Login,
-                Password = createUserDto.Password, // todo: хешировать пароль
+                PasswordHash = hashedPassword.Hash,
+                PasswordSalt = hashedPassword.Salt,
+                PasswordIterations = hashedPassword.Iterations,
+                PasswordHashAlgorithm = hashedPassword.Algorithm,
                 Name = createUserDto.Name,
                 Gender = createUserDto.Gender,
                 Birthday = createUserDto.Birthday,
@@ -45,7 +55,7 @@ namespace UserApi.Services {
                 CreatedOn = DateTime.UtcNow,
                 CreatedBy = createdBy,
                 ModifiedOn = DateTime.UtcNow,
-                ModifiedBy = createdBy, // todo: возможно стоит изменить
+                ModifiedBy = createdBy, // TODO: возможно стоит изменить
                 RevokedOn = null,
                 RevokedBy = null
             };
@@ -53,7 +63,7 @@ namespace UserApi.Services {
             _users.Add(newUserGuid, newUser);
             _logins.Add(newUser.Login, newUserGuid);
 
-            return Task.FromResult<User?>(newUser);
+            return await Task.FromResult<User?>(newUser);
         }
 
         public Task<IEnumerable<User>> GetAllUsersAsync() {
@@ -62,7 +72,7 @@ namespace UserApi.Services {
 
         public Task<User?> GetUserByLoginAsync(string login) {
             if (_logins.ContainsKey(login)) {
-                Guid userId = _logins[login]; // todo: заменить на TryGetValue (а может и не надо)
+                Guid userId = _logins[login]; // TODO: заменить на TryGetValue (а может и не надо)
                 if(_users.TryGetValue(userId, out User? user)) {
                     return Task.FromResult<User?>(user);
                 }
@@ -113,7 +123,11 @@ namespace UserApi.Services {
                 return null;
             }
 
-            user.Password = newPassword; // todo: хеширование паролей
+            var hashedPassword = PasswordHasher.GenerateHashedPassword(newPassword);
+            user.PasswordHash = hashedPassword.Hash;
+            user.PasswordSalt = hashedPassword.Salt;
+            user.PasswordIterations = hashedPassword.Iterations;
+            user.PasswordHashAlgorithm = hashedPassword.Algorithm;
             user.ModifiedBy = modifiedBy;
             user.ModifiedOn = DateTime.UtcNow;
 

@@ -94,7 +94,7 @@ namespace UserApi.Controllers {
                 return BadRequest(ModelState);
             }
 
-            var currentUserLogin = "Admin"; // todo: заменить при аутентификации
+            var currentUserLogin = "Admin"; // TODO: заменить при аутентификации
             var userExisting = await _userService.GetUserByLoginAsync(login);
             if(userExisting == null) {
                 return NotFound("User not found");
@@ -115,7 +115,7 @@ namespace UserApi.Controllers {
                 return BadRequest(ModelState);
             }
 
-            var currentUserLogin = "Admin"; // todo: заменить после аутентификации
+            var currentUserLogin = "Admin"; // TODO: заменить после аутентификации
 
             var userExisting = await _userService.GetUserByLoginAsync(login);
             if(userExisting == null) {
@@ -135,7 +135,7 @@ namespace UserApi.Controllers {
                 return BadRequest(ModelState);
             }
 
-            var currentUserLogin = "Admin"; // todo: заменить после аутентификации
+            var currentUserLogin = "Admin"; // TODO: заменить после аутентификации
             var userExisting = await _userService.GetUserByLoginAsync(login);
             if(userExisting == null) {
                 return NotFound("User not found");
