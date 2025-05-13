@@ -1,6 +1,7 @@
 using UserApi.Models;
 using UserApi.DTOs;
 using UserApi.Security;
+using UserApi.Exceptions;
 
 namespace UserApi.Services {
     public class MemoryUserService : IUserService {
@@ -33,10 +34,9 @@ namespace UserApi.Services {
             _users.Add(adminGuid, adminUser);
             _logins.Add(adminUser.Login, adminGuid);
         }
-        public async Task<User?> CreateUserAsync(CreateUserRequestDto createUserDto, string createdBy) {
+        public async Task<User> CreateUserAsync(CreateUserRequestDto createUserDto, string createdBy) {
             if (_logins.ContainsKey(createUserDto.Login)) {
-                Console.WriteLine("This login is already taken");
-                return null;
+                throw new DuplicateLoginException(createUserDto.Login);
             }
             
             var hashedPassword = PasswordHasher.GenerateHashedPassword(createUserDto.Password);
@@ -55,7 +55,7 @@ namespace UserApi.Services {
                 CreatedOn = DateTime.UtcNow,
                 CreatedBy = createdBy,
                 ModifiedOn = DateTime.UtcNow,
-                ModifiedBy = createdBy, // TODO: возможно стоит изменить
+                ModifiedBy = createdBy,
                 RevokedOn = null,
                 RevokedBy = null
             };
@@ -63,30 +63,29 @@ namespace UserApi.Services {
             _users.Add(newUserGuid, newUser);
             _logins.Add(newUser.Login, newUserGuid);
 
-            return await Task.FromResult<User?>(newUser);
+            return await Task.FromResult<User>(newUser);
         }
 
         public Task<IEnumerable<User>> GetAllUsersAsync() {
             return Task.FromResult(_users.Values.Where(u => u.RevokedOn == null).OrderBy(u => u.CreatedOn).AsEnumerable());
         }
 
-        public Task<User?> GetUserByLoginAsync(string login) {
-            if (_logins.ContainsKey(login)) {
-                Guid userId = _logins[login]; // TODO: заменить на TryGetValue (а может и не надо)
-                if(_users.TryGetValue(userId, out User? user)) {
-                    return Task.FromResult<User?>(user);
+        public async Task<User?> GetUserByLoginAsync(string login) {
+            if (_logins.TryGetValue(login, out Guid userId)) {
+                if (_users.TryGetValue(userId, out User? user)) {
+                    return await Task.FromResult<User?>(user);
                 }
             }
-            return Task.FromResult<User?>(null);
+            return await Task.FromResult<User?>(null);
         }
 
-        public async Task<User?> UpdateUserInfoAsync(string login, UpdateUserInfoRequestDto updateUserDto, string modifiedBy) {
+        public async Task<User> UpdateUserInfoAsync(string login, UpdateUserInfoRequestDto updateUserDto, string modifiedBy) {
             if (!_logins.TryGetValue(login, out Guid userId)) {
-                return null;
+                throw new UserNotFoundException(login);
             }
 
             if (!_users.TryGetValue(userId, out User? user)) {
-                return null;
+                throw new UserNotFoundException(login);
             }
 
             bool isModified = false; // для null отслеживания
@@ -99,7 +98,7 @@ namespace UserApi.Services {
                 user.Gender = updateUserDto.Gender.Value;
                 isModified = true;
             }
-            if (updateUserDto.Birthday != null) { // todo: возможно, лучше создать новый эндпоинт для обработки др
+            if (updateUserDto.Birthday != null) { // FIXME: возможно, лучше создать новый эндпоинт для обработки др
                 if (user.Birthday != updateUserDto.Birthday.Value) { // др не очищается
                     user.Birthday = updateUserDto.Birthday.Value;
                     isModified = true;
@@ -114,13 +113,13 @@ namespace UserApi.Services {
             return await Task.FromResult(user);
         }
 
-        public async Task<User?> UpdateUserPasswordAsync(string login, string newPassword, string modifiedBy) {
+        public async Task<User> UpdateUserPasswordAsync(string login, string newPassword, string modifiedBy) {
             if (!_logins.TryGetValue(login, out Guid userId)) {
-                return null;
+                throw new UserNotFoundException(login);
             }
 
             if (!_users.TryGetValue(userId, out User? user)) {
-                return null;
+                throw new UserNotFoundException(login);
             }
 
             var hashedPassword = PasswordHasher.GenerateHashedPassword(newPassword);
@@ -134,11 +133,11 @@ namespace UserApi.Services {
             return await Task.FromResult(user);
         }
 
-        public async Task<User?> UpdateUserLoginAsync(string oldLogin, string newLogin, string modifiedBy) {
+        public async Task<User> UpdateUserLoginAsync(string oldLogin, string newLogin, string modifiedBy) {
             // Из-за игнора регистра дополнительные проверки
             if (string.Equals(oldLogin, newLogin, StringComparison.OrdinalIgnoreCase)) {
                 if (!_logins.TryGetValue(oldLogin, out Guid userIdNoChange) || !_users.TryGetValue(userIdNoChange, out User? userNoChange)) {
-                    return null;
+                    throw new UserNotFoundException(oldLogin);
                 }
                 userNoChange.ModifiedBy = modifiedBy;
                 userNoChange.ModifiedOn = DateTime.UtcNow;
@@ -146,15 +145,15 @@ namespace UserApi.Services {
             }
             
             if (_logins.ContainsKey(newLogin)) {
-                return null; // todo: подумать над отдельным ислкючением
+                throw new DuplicateLoginException(newLogin);
             }
             
             if (!_logins.TryGetValue(oldLogin, out Guid userId)) {
-                return null;
+                throw new UserNotFoundException(oldLogin);
             }
 
             if (!_users.TryGetValue(userId, out User? user)) {
-                return null;
+                throw new UserNotFoundException(oldLogin);
             }
             
             _logins.Remove(oldLogin);
