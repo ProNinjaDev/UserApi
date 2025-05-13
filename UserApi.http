@@ -1,6 +1,55 @@
 @UserApi_HostAddress = http://localhost:5117
+@api_base = {{UserApi_HostAddress}}/api/users
 
-GET {{UserApi_HostAddress}}/weatherforecast/
+### 1. Получить всех активных пользователей
+GET {{api_base}}/
 Accept: application/json
+
+### 2. Получить пользователя по логину (например, Admin)
+GET {{api_base}}/Admin
+Accept: application/json
+
+### 3. Создать нового пользователя
+# POST {{api_base}}/
+# Content-Type: application/json
+# Accept: application/json
+#
+# {
+#   "login": "someNewLogin",
+#   "password": "sdfPsdfss1",
+#   "name": "Full Name",
+#   "gender": 1,
+#   "birthday": "2000-01-15",
+#   "admin": false
+# }
+
+### 4. Обновить основную информацию пользователя
+# PUT {{api_base}}/{login_to_update}
+# Content-Type: application/json
+# Accept: application/json
+#
+# {
+#   "name": "New Updated Name",
+#   "gender": 0,
+#   "birthday": "1990-05-20"
+# }
+
+### 5. Изменить пароль пользователя
+# PUT {{api_base}}/{login_to_update_password}/password
+# Content-Type: application/json
+# Accept: application/json
+#
+# {
+#   "newPassword": "VeryStrongPassEasy2123"
+# }
+
+### 6. Изменить логин пользователя
+# PUT {{api_base}}/{old_login}/login
+# Content-Type: application/json
+# Accept: application/json
+#
+# {
+#   "newLogin": "NewLoginIVsyo"
+# }
 
 ###

@@ -99,11 +99,8 @@ namespace UserApi.Controllers {
             try {
                 var currentUserLogin = "Admin"; // TODO: заменить при аутентификации
                 var userExisting = await _userService.GetUserByLoginAsync(login);
-                if(userExisting == null) {
-                    return NotFound("User not found");
-                }
 
-                // todo: добавить проверки при аутентификации
+                // TODO: добавить проверки при аутентификации
                 var userUpdated = await _userService.UpdateUserInfoAsync(login, updateUserDto, currentUserLogin);
 
                 return NoContent();
@@ -126,9 +123,6 @@ namespace UserApi.Controllers {
                 var currentUserLogin = "Admin"; // TODO: заменить после аутентификации
 
                 var userExisting = await _userService.GetUserByLoginAsync(login);
-                if(userExisting == null) {
-                    return NotFound("User not found");
-                }
 
                 var userUpdated = await _userService.UpdateUserPasswordAsync(login, updatePasswordDto.NewPassword, currentUserLogin);
                 return NoContent();
@@ -150,9 +144,6 @@ namespace UserApi.Controllers {
             try {
                 var currentUserLogin = "Admin"; // TODO: заменить после аутентификации
                 var userExisting = await _userService.GetUserByLoginAsync(login);
-                if(userExisting == null) {
-                    return NotFound("User not found");
-                }
 
                 var userUpdated = await _userService.UpdateUserLoginAsync(login, updateLoginDto.NewLogin, currentUserLogin);
                 if(userUpdated == null) {
