@@ -146,15 +146,6 @@ namespace UserApi.Controllers {
                 var userExisting = await _userService.GetUserByLoginAsync(login);
 
                 var userUpdated = await _userService.UpdateUserLoginAsync(login, updateLoginDto.NewLogin, currentUserLogin);
-                if(userUpdated == null) {
-                    var checkNewLogin = await _userService.GetUserByLoginAsync(updateLoginDto.NewLogin);
-                    if(checkNewLogin != null && !string.Equals(login, updateLoginDto.NewLogin, StringComparison.OrdinalIgnoreCase)) {
-                        return Conflict($"The new login '{updateLoginDto.NewLogin}' is already taken"); // 409
-                    }
-                    
-                    return BadRequest($"Failed to update login for {login}");
-                }
-
                 return NoContent();
             }
             catch (UserNotFoundException ex)
@@ -165,6 +156,20 @@ namespace UserApi.Controllers {
             {
                 return Conflict(new { message = ex.Message });
             }
+        }
+
+        // DELETE: api/users/{login}
+        [HttpDelete("{login}")]
+        public async Task<IActionResult> SoftDeleteUser([FromRoute] string login) {
+            try {
+                string revokedByLogin = "Admin"; // TODO: изменить на логин аутентифицированного админа
+                await _userService.SoftDeleteUserAsync(login, revokedByLogin);
+                return NoContent();
+            }
+            catch (UserNotFoundException ex) {
+                return NotFound(new { message = ex.Message });
+            }
+
         }
     }
 }

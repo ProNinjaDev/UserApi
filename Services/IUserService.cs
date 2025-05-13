@@ -16,5 +16,7 @@ namespace UserApi.Services
         Task<User> UpdateUserPasswordAsync(string login, string newPassword, string modifiedBy);
 
         Task<User> UpdateUserLoginAsync(string oldLogin, string newLogin, string modifiedBy);
+
+        Task<User> SoftDeleteUserAsync(string login, string revokedByLogin);
     }
 }
