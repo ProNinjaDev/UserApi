@@ -3,7 +3,11 @@ namespace UserApi.Models {
     public class User {
         public Guid Guid { get; set; }
         public required string Login { get; set; }
-        public required string Password { get; set; }
+        // public required string Password { get; set; }
+        public required byte[] PasswordHash { get; set; }
+        public required byte[] PasswordSalt { get; set; }
+        public int PasswordIterations { get; set; }
+        public required string PasswordHashAlgorithm { get; set; }
         public required string Name { get; set; }
         public int Gender { get; set; }
         public DateTime? Birthday { get; set; }

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using UserApi.Models;
 using UserApi.Services;
 using UserApi.DTOs;
+using UserApi.Exceptions;
 
 namespace UserApi.Controllers {
     [ApiController]
@@ -64,25 +65,26 @@ namespace UserApi.Controllers {
                 return BadRequest(ModelState);
             }
 
-            var newCreatedUser = await _userService.CreateUserAsync(createUserDto, "Admin"); // todo: возможно CreatedBy нужен другой
+            try {
+                var newCreatedUser = await _userService.CreateUserAsync(createUserDto, "Admin"); // TODO: возможно CreatedBy нужен другой
 
-            if (newCreatedUser == null) {
-                return BadRequest("User with this login already exists");
+                var userResponseDto = new UserResponseDto {
+                    Guid = newCreatedUser.Guid,
+                    Login = newCreatedUser.Login,
+                    Name = newCreatedUser.Name,
+                    Gender = newCreatedUser.Gender,
+                    Birthday = newCreatedUser.Birthday,
+                    Admin = newCreatedUser.Admin,
+                    CreatedOn = newCreatedUser.CreatedOn,
+                    IsActive = newCreatedUser.RevokedOn == null
+                };
+
+                // 201 Created и ссылочку на созданный ресурс и сам ресурс
+                return CreatedAtAction(nameof(GetUserByLogin), new { login = userResponseDto.Login }, userResponseDto);
             }
-
-            var userResponseDto = new UserResponseDto {
-                Guid = newCreatedUser.Guid,
-                Login = newCreatedUser.Login,
-                Name = newCreatedUser.Name,
-                Gender = newCreatedUser.Gender,
-                Birthday = newCreatedUser.Birthday,
-                Admin = newCreatedUser.Admin,
-                CreatedOn = newCreatedUser.CreatedOn,
-                IsActive = newCreatedUser.RevokedOn == null
-            };
-
-            // 201 Created и ссылочку на созданный ресурс и сам ресурс
-            return CreatedAtAction(nameof(GetUserByLogin), new { login = userResponseDto.Login }, userResponseDto); 
+            catch (DuplicateLoginException ex) {
+                return Conflict(new { message = ex.Message });
+            }
         }
 
         // PUT: api/users/{login} 
@@ -94,16 +96,18 @@ namespace UserApi.Controllers {
                 return BadRequest(ModelState);
             }
 
-            var currentUserLogin = "Admin"; // todo: заменить при аутентификации
-            var userExisting = await _userService.GetUserByLoginAsync(login);
-            if(userExisting == null) {
-                return NotFound("User not found");
+            try {
+                var currentUserLogin = "Admin"; // TODO: заменить при аутентификации
+                var userExisting = await _userService.GetUserByLoginAsync(login);
+
+                // TODO: добавить проверки при аутентификации
+                var userUpdated = await _userService.UpdateUserInfoAsync(login, updateUserDto, currentUserLogin);
+
+                return NoContent();
             }
-
-            // todo: добавить проверки при аутентификации
-            var userUpdated = await _userService.UpdateUserInfoAsync(login, updateUserDto, currentUserLogin);
-
-            return NoContent();
+            catch (UserNotFoundException ex) {
+                return NotFound(new { message = ex.Message });
+            }
         }
 
         // PUT: api/users/{login}/password
@@ -115,15 +119,17 @@ namespace UserApi.Controllers {
                 return BadRequest(ModelState);
             }
 
-            var currentUserLogin = "Admin"; // todo: заменить после аутентификации
+            try {
+                var currentUserLogin = "Admin"; // TODO: заменить после аутентификации
 
-            var userExisting = await _userService.GetUserByLoginAsync(login);
-            if(userExisting == null) {
-                return NotFound("User not found");
+                var userExisting = await _userService.GetUserByLoginAsync(login);
+
+                var userUpdated = await _userService.UpdateUserPasswordAsync(login, updatePasswordDto.NewPassword, currentUserLogin);
+                return NoContent();
             }
-
-            var userUpdated = await _userService.UpdateUserPasswordAsync(login, updatePasswordDto.NewPassword, currentUserLogin);
-            return NoContent();
+            catch (UserNotFoundException ex) {
+                return NotFound(new { message = ex.Message });
+            }
         }
 
         // PUT: api/users/{login}/login
@@ -135,23 +141,30 @@ namespace UserApi.Controllers {
                 return BadRequest(ModelState);
             }
 
-            var currentUserLogin = "Admin"; // todo: заменить после аутентификации
-            var userExisting = await _userService.GetUserByLoginAsync(login);
-            if(userExisting == null) {
-                return NotFound("User not found");
-            }
+            try {
+                var currentUserLogin = "Admin"; // TODO: заменить после аутентификации
+                var userExisting = await _userService.GetUserByLoginAsync(login);
 
-            var userUpdated = await _userService.UpdateUserLoginAsync(login, updateLoginDto.NewLogin, currentUserLogin);
-            if(userUpdated == null) {
-                var checkNewLogin = await _userService.GetUserByLoginAsync(updateLoginDto.NewLogin);
-                if(checkNewLogin != null && !string.Equals(login, updateLoginDto.NewLogin, StringComparison.OrdinalIgnoreCase)) {
-                    return Conflict($"The new login '{updateLoginDto.NewLogin}' is already taken"); // 409
+                var userUpdated = await _userService.UpdateUserLoginAsync(login, updateLoginDto.NewLogin, currentUserLogin);
+                if(userUpdated == null) {
+                    var checkNewLogin = await _userService.GetUserByLoginAsync(updateLoginDto.NewLogin);
+                    if(checkNewLogin != null && !string.Equals(login, updateLoginDto.NewLogin, StringComparison.OrdinalIgnoreCase)) {
+                        return Conflict($"The new login '{updateLoginDto.NewLogin}' is already taken"); // 409
+                    }
+                    
+                    return BadRequest($"Failed to update login for {login}");
                 }
-                
-                return BadRequest($"Failed to update login for {login}");
-            }
 
-            return NoContent();
+                return NoContent();
+            }
+            catch (UserNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (DuplicateLoginException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
         }
     }
 }
