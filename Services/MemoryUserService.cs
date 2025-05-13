@@ -80,11 +80,8 @@ namespace UserApi.Services {
         }
 
         public async Task<User> UpdateUserInfoAsync(string login, UpdateUserInfoRequestDto updateUserDto, string modifiedBy) {
-            if (!_logins.TryGetValue(login, out Guid userId)) {
-                throw new UserNotFoundException(login);
-            }
-
-            if (!_users.TryGetValue(userId, out User? user)) {
+            User? user = await GetUserByLoginAsync(login);
+            if (user == null) {
                 throw new UserNotFoundException(login);
             }
 
@@ -114,11 +111,8 @@ namespace UserApi.Services {
         }
 
         public async Task<User> UpdateUserPasswordAsync(string login, string newPassword, string modifiedBy) {
-            if (!_logins.TryGetValue(login, out Guid userId)) {
-                throw new UserNotFoundException(login);
-            }
-
-            if (!_users.TryGetValue(userId, out User? user)) { // FIXME: использовать GetUserByLoginAsync
+            User? user = await GetUserByLoginAsync(login);
+            if (user == null) {
                 throw new UserNotFoundException(login);
             }
 
@@ -135,10 +129,12 @@ namespace UserApi.Services {
 
         public async Task<User> UpdateUserLoginAsync(string oldLogin, string newLogin, string modifiedBy) {
             // Из-за игнора регистра дополнительные проверки
-            if (string.Equals(oldLogin, newLogin, StringComparison.OrdinalIgnoreCase)) { // FIXME: использовать GetUserByLoginAsync
-                if (!_logins.TryGetValue(oldLogin, out Guid userIdNoChange) || !_users.TryGetValue(userIdNoChange, out User? userNoChange)) {
+            if (string.Equals(oldLogin, newLogin, StringComparison.OrdinalIgnoreCase)) {
+                User? userNoChange = await GetUserByLoginAsync(oldLogin);
+                if (userNoChange == null) {
                     throw new UserNotFoundException(oldLogin);
                 }
+
                 userNoChange.ModifiedBy = modifiedBy;
                 userNoChange.ModifiedOn = DateTime.UtcNow;
                 return await Task.FromResult(userNoChange);
@@ -148,11 +144,8 @@ namespace UserApi.Services {
                 throw new DuplicateLoginException(newLogin);
             }
             
-            if (!_logins.TryGetValue(oldLogin, out Guid userId)) {
-                throw new UserNotFoundException(oldLogin);
-            }
-
-            if (!_users.TryGetValue(userId, out User? user)) { // FIXME: использовать GetUserByLoginAsync
+            User? user = await GetUserByLoginAsync(oldLogin);
+            if (user == null) {
                 throw new UserNotFoundException(oldLogin);
             }
             

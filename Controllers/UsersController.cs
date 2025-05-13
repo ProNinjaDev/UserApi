@@ -98,7 +98,7 @@ namespace UserApi.Controllers {
 
             try {
                 var currentUserLogin = "Admin"; // TODO: заменить при аутентификации
-                var userExisting = await _userService.GetUserByLoginAsync(login); // FIXME: лишний вызов
+                var userExisting = await _userService.GetUserByLoginAsync(login);
 
                 // TODO: добавить проверки при аутентификации
                 var userUpdated = await _userService.UpdateUserInfoAsync(login, updateUserDto, currentUserLogin);
@@ -122,7 +122,7 @@ namespace UserApi.Controllers {
             try {
                 var currentUserLogin = "Admin"; // TODO: заменить после аутентификации
 
-                var userExisting = await _userService.GetUserByLoginAsync(login); // FIXME: лишний вызов
+                var userExisting = await _userService.GetUserByLoginAsync(login);
 
                 var userUpdated = await _userService.UpdateUserPasswordAsync(login, updatePasswordDto.NewPassword, currentUserLogin);
                 return NoContent();
@@ -143,18 +143,9 @@ namespace UserApi.Controllers {
 
             try {
                 var currentUserLogin = "Admin"; // TODO: заменить после аутентификации
-                var userExisting = await _userService.GetUserByLoginAsync(login); // FIXME: лишний вызов
+                var userExisting = await _userService.GetUserByLoginAsync(login);
 
                 var userUpdated = await _userService.UpdateUserLoginAsync(login, updateLoginDto.NewLogin, currentUserLogin);
-                if(userUpdated == null) {
-                    var checkNewLogin = await _userService.GetUserByLoginAsync(updateLoginDto.NewLogin);
-                    if(checkNewLogin != null && !string.Equals(login, updateLoginDto.NewLogin, StringComparison.OrdinalIgnoreCase)) { // FIXME: лишняя проверка
-                        return Conflict($"The new login '{updateLoginDto.NewLogin}' is already taken"); // 409
-                    }
-                    
-                    return BadRequest($"Failed to update login for {login}");
-                }
-
                 return NoContent();
             }
             catch (UserNotFoundException ex)
