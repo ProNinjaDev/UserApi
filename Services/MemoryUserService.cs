@@ -118,7 +118,7 @@ namespace UserApi.Services {
                 throw new UserNotFoundException(login);
             }
 
-            if (!_users.TryGetValue(userId, out User? user)) {
+            if (!_users.TryGetValue(userId, out User? user)) { // FIXME: использовать GetUserByLoginAsync
                 throw new UserNotFoundException(login);
             }
 
@@ -135,7 +135,7 @@ namespace UserApi.Services {
 
         public async Task<User> UpdateUserLoginAsync(string oldLogin, string newLogin, string modifiedBy) {
             // Из-за игнора регистра дополнительные проверки
-            if (string.Equals(oldLogin, newLogin, StringComparison.OrdinalIgnoreCase)) {
+            if (string.Equals(oldLogin, newLogin, StringComparison.OrdinalIgnoreCase)) { // FIXME: использовать GetUserByLoginAsync
                 if (!_logins.TryGetValue(oldLogin, out Guid userIdNoChange) || !_users.TryGetValue(userIdNoChange, out User? userNoChange)) {
                     throw new UserNotFoundException(oldLogin);
                 }
@@ -152,7 +152,7 @@ namespace UserApi.Services {
                 throw new UserNotFoundException(oldLogin);
             }
 
-            if (!_users.TryGetValue(userId, out User? user)) {
+            if (!_users.TryGetValue(userId, out User? user)) { // FIXME: использовать GetUserByLoginAsync
                 throw new UserNotFoundException(oldLogin);
             }
             
@@ -163,6 +163,21 @@ namespace UserApi.Services {
             user.ModifiedBy = modifiedBy;
             user.ModifiedOn = DateTime.UtcNow;
             
+            return await Task.FromResult(user);
+        }
+        public async Task<User> SoftDeleteUserAsync(string login, string revokedByLogin) {
+            User? user = await GetUserByLoginAsync(login);
+
+            if (user == null)
+            {
+                throw new UserNotFoundException($"Пользователь с логином '{login}' не найден.");
+            }
+            
+            user.RevokedBy = revokedByLogin;
+            user.RevokedOn = DateTime.UtcNow;
+            user.ModifiedBy = revokedByLogin;
+            user.ModifiedOn = DateTime.UtcNow;
+
             return await Task.FromResult(user);
         }
     }

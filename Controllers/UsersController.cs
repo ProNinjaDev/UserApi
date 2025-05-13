@@ -98,7 +98,7 @@ namespace UserApi.Controllers {
 
             try {
                 var currentUserLogin = "Admin"; // TODO: заменить при аутентификации
-                var userExisting = await _userService.GetUserByLoginAsync(login);
+                var userExisting = await _userService.GetUserByLoginAsync(login); // FIXME: лишний вызов
 
                 // TODO: добавить проверки при аутентификации
                 var userUpdated = await _userService.UpdateUserInfoAsync(login, updateUserDto, currentUserLogin);
@@ -122,7 +122,7 @@ namespace UserApi.Controllers {
             try {
                 var currentUserLogin = "Admin"; // TODO: заменить после аутентификации
 
-                var userExisting = await _userService.GetUserByLoginAsync(login);
+                var userExisting = await _userService.GetUserByLoginAsync(login); // FIXME: лишний вызов
 
                 var userUpdated = await _userService.UpdateUserPasswordAsync(login, updatePasswordDto.NewPassword, currentUserLogin);
                 return NoContent();
@@ -143,12 +143,12 @@ namespace UserApi.Controllers {
 
             try {
                 var currentUserLogin = "Admin"; // TODO: заменить после аутентификации
-                var userExisting = await _userService.GetUserByLoginAsync(login);
+                var userExisting = await _userService.GetUserByLoginAsync(login); // FIXME: лишний вызов
 
                 var userUpdated = await _userService.UpdateUserLoginAsync(login, updateLoginDto.NewLogin, currentUserLogin);
                 if(userUpdated == null) {
                     var checkNewLogin = await _userService.GetUserByLoginAsync(updateLoginDto.NewLogin);
-                    if(checkNewLogin != null && !string.Equals(login, updateLoginDto.NewLogin, StringComparison.OrdinalIgnoreCase)) {
+                    if(checkNewLogin != null && !string.Equals(login, updateLoginDto.NewLogin, StringComparison.OrdinalIgnoreCase)) { // FIXME: лишняя проверка
                         return Conflict($"The new login '{updateLoginDto.NewLogin}' is already taken"); // 409
                     }
                     
@@ -165,6 +165,20 @@ namespace UserApi.Controllers {
             {
                 return Conflict(new { message = ex.Message });
             }
+        }
+
+        // DELETE: api/users/{login}
+        [HttpDelete("{login}")]
+        public async Task<IActionResult> SoftDeleteUser([FromRoute] string login) {
+            try {
+                string revokedByLogin = "Admin"; // TODO: изменить на логин аутентифицированного админа
+                await _userService.SoftDeleteUserAsync(login, revokedByLogin);
+                return NoContent();
+            }
+            catch (UserNotFoundException ex) {
+                return NotFound(new { message = ex.Message });
+            }
+
         }
     }
 }
