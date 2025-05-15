@@ -173,5 +173,23 @@ namespace UserApi.Services {
 
             return await Task.FromResult(user);
         }
+
+        public async Task<User> RestoreUserAsync(string login, string modifiedByLogin) {
+            User? user = await GetUserByLoginAsync(login);
+            if (user == null) {
+                throw new UserNotFoundException(login);
+            }
+
+            if (user.RevokedOn != null) {
+                user.RevokedOn = null;
+                user.RevokedBy = null;
+            }
+
+            user.ModifiedBy = modifiedByLogin;
+            user.ModifiedOn = DateTime.UtcNow;
+
+            return await Task.FromResult(user);
+
+        }
     }
 }

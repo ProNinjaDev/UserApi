@@ -171,5 +171,30 @@ namespace UserApi.Controllers {
             }
 
         }
+
+        // PUT: api/users/{login}/restore
+        [HttpPut("{login}/restore")]
+        public async Task<IActionResult> RestoreUser([FromRoute] string login) {
+            try {
+                string modifiedByLogin = "Admin"; // TODO: изменить на логин аутентифицированного админа
+                var restoredUser = await _userService.RestoreUserAsync(login, modifiedByLogin);
+
+                var userResponseDto = new UserResponseDto {
+                    Guid = restoredUser.Guid,
+                    Login = restoredUser.Login,
+                    Name = restoredUser.Name,
+                    Gender = restoredUser.Gender,
+                    Birthday = restoredUser.Birthday,
+                    Admin = restoredUser.Admin,
+                    CreatedOn = restoredUser.CreatedOn,
+                    IsActive = restoredUser.RevokedOn == null
+                };
+                
+                return Ok(userResponseDto);
+            }
+            catch (UserNotFoundException ex) {
+                return NotFound(new {message = ex.Message});
+            }
+        }
     }
 }
