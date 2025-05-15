@@ -23,16 +23,7 @@ namespace UserApi.Controllers {
                 return Ok(Enumerable.Empty<UserResponseDto>());
             }
 
-            var userResponseDtos = users.Select(user => new UserResponseDto {
-                Guid = user.Guid,
-                Login = user.Login,
-                Name = user.Name,
-                Gender = user.Gender,
-                Birthday = user.Birthday,
-                Admin = user.Admin,
-                CreatedOn = user.CreatedOn,
-                IsActive = user.RevokedOn == null
-            });
+            var userResponseDtos = users.Select(user => MapUserToResponseDto(user));
             return Ok(userResponseDtos);
         }
 
@@ -45,17 +36,7 @@ namespace UserApi.Controllers {
                 return NotFound();
             }
 
-            var userResponseDto = new UserResponseDto {
-                Guid = user.Guid,
-                Login = user.Login,
-                Name = user.Name,
-                Gender = user.Gender,
-                Birthday = user.Birthday,
-                Admin = user.Admin,
-                CreatedOn = user.CreatedOn,
-                IsActive = user.RevokedOn == null
-            };
-            return Ok(userResponseDto);
+            return Ok(MapUserToResponseDto(user));
         }
 
         // POST: api/users
@@ -68,16 +49,7 @@ namespace UserApi.Controllers {
             try {
                 var newCreatedUser = await _userService.CreateUserAsync(createUserDto, "Admin"); // TODO: возможно CreatedBy нужен другой
 
-                var userResponseDto = new UserResponseDto {
-                    Guid = newCreatedUser.Guid,
-                    Login = newCreatedUser.Login,
-                    Name = newCreatedUser.Name,
-                    Gender = newCreatedUser.Gender,
-                    Birthday = newCreatedUser.Birthday,
-                    Admin = newCreatedUser.Admin,
-                    CreatedOn = newCreatedUser.CreatedOn,
-                    IsActive = newCreatedUser.RevokedOn == null
-                };
+                var userResponseDto = MapUserToResponseDto(newCreatedUser);
 
                 // 201 Created и ссылочку на созданный ресурс и сам ресурс
                 return CreatedAtAction(nameof(GetUserByLogin), new { login = userResponseDto.Login }, userResponseDto);
@@ -179,22 +151,24 @@ namespace UserApi.Controllers {
                 string modifiedByLogin = "Admin"; // TODO: изменить на логин аутентифицированного админа
                 var restoredUser = await _userService.RestoreUserAsync(login, modifiedByLogin);
 
-                var userResponseDto = new UserResponseDto {
-                    Guid = restoredUser.Guid,
-                    Login = restoredUser.Login,
-                    Name = restoredUser.Name,
-                    Gender = restoredUser.Gender,
-                    Birthday = restoredUser.Birthday,
-                    Admin = restoredUser.Admin,
-                    CreatedOn = restoredUser.CreatedOn,
-                    IsActive = restoredUser.RevokedOn == null
-                };
-                
-                return Ok(userResponseDto);
+                return Ok(MapUserToResponseDto(restoredUser));
             }
             catch (UserNotFoundException ex) {
                 return NotFound(new {message = ex.Message});
             }
+        }
+
+        private UserResponseDto MapUserToResponseDto(User user) {
+            return new UserResponseDto {
+                Guid = user.Guid,
+                Login = user.Login,
+                Name = user.Name,
+                Gender = user.Gender,
+                Birthday = user.Birthday,
+                Admin = user.Admin,
+                CreatedOn = user.CreatedOn,
+                IsActive = user.RevokedOn == null
+            };
         }
     }
 }

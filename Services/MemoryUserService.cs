@@ -34,6 +34,20 @@ namespace UserApi.Services {
             _users.Add(adminGuid, adminUser);
             _logins.Add(adminUser.Login, adminGuid);
         }
+
+        private async Task<User> GetUserByLoginOrThrowAsync(string login) {
+            var user = await GetUserByLoginAsync(login);
+            if (user == null) {
+                throw new UserNotFoundException(login);
+            }
+            return user;
+        }
+
+        private void TouchUser(User user, string modifiedBy) {
+            user.ModifiedBy = modifiedBy;
+            user.ModifiedOn = DateTime.UtcNow;
+        }
+
         public async Task<User> CreateUserAsync(CreateUserRequestDto createUserDto, string createdBy) {
             if (_logins.ContainsKey(createUserDto.Login)) {
                 throw new DuplicateLoginException(createUserDto.Login);
@@ -80,10 +94,7 @@ namespace UserApi.Services {
         }
 
         public async Task<User> UpdateUserInfoAsync(string login, UpdateUserInfoRequestDto updateUserDto, string modifiedBy) {
-            User? user = await GetUserByLoginAsync(login);
-            if (user == null) {
-                throw new UserNotFoundException(login);
-            }
+            User user = await GetUserByLoginOrThrowAsync(login);
 
             bool isModified = false; // для null отслеживания
 
@@ -103,26 +114,21 @@ namespace UserApi.Services {
             }
 
             if (isModified) {
-                user.ModifiedBy = modifiedBy;
-                user.ModifiedOn = DateTime.UtcNow;
+                TouchUser(user, modifiedBy);
             }
 
             return await Task.FromResult(user);
         }
 
         public async Task<User> UpdateUserPasswordAsync(string login, string newPassword, string modifiedBy) {
-            User? user = await GetUserByLoginAsync(login);
-            if (user == null) {
-                throw new UserNotFoundException(login);
-            }
+            User user = await GetUserByLoginOrThrowAsync(login);
 
             var hashedPassword = PasswordHasher.GenerateHashedPassword(newPassword);
             user.PasswordHash = hashedPassword.Hash;
             user.PasswordSalt = hashedPassword.Salt;
             user.PasswordIterations = hashedPassword.Iterations;
             user.PasswordHashAlgorithm = hashedPassword.Algorithm;
-            user.ModifiedBy = modifiedBy;
-            user.ModifiedOn = DateTime.UtcNow;
+            TouchUser(user, modifiedBy);
 
             return await Task.FromResult(user);
         }
@@ -130,13 +136,9 @@ namespace UserApi.Services {
         public async Task<User> UpdateUserLoginAsync(string oldLogin, string newLogin, string modifiedBy) {
             // Из-за игнора регистра дополнительные проверки
             if (string.Equals(oldLogin, newLogin, StringComparison.OrdinalIgnoreCase)) {
-                User? userNoChange = await GetUserByLoginAsync(oldLogin);
-                if (userNoChange == null) {
-                    throw new UserNotFoundException(oldLogin);
-                }
+                User userNoChange = await GetUserByLoginOrThrowAsync(oldLogin);
 
-                userNoChange.ModifiedBy = modifiedBy;
-                userNoChange.ModifiedOn = DateTime.UtcNow;
+                TouchUser(userNoChange, modifiedBy);
                 return await Task.FromResult(userNoChange);
             }
             
@@ -144,52 +146,37 @@ namespace UserApi.Services {
                 throw new DuplicateLoginException(newLogin);
             }
             
-            User? user = await GetUserByLoginAsync(oldLogin);
-            if (user == null) {
-                throw new UserNotFoundException(oldLogin);
-            }
+            User user = await GetUserByLoginOrThrowAsync(oldLogin);
             
             _logins.Remove(oldLogin);
             user.Login = newLogin;
             _logins.Add(newLogin, user.Guid);
 
-            user.ModifiedBy = modifiedBy;
-            user.ModifiedOn = DateTime.UtcNow;
+            TouchUser(user, modifiedBy);
             
             return await Task.FromResult(user);
         }
         public async Task<User> SoftDeleteUserAsync(string login, string revokedByLogin) {
-            User? user = await GetUserByLoginAsync(login);
-
-            if (user == null)
-            {
-                throw new UserNotFoundException($"Пользователь с логином '{login}' не найден.");
-            }
+            User user = await GetUserByLoginOrThrowAsync(login);
             
             user.RevokedBy = revokedByLogin;
             user.RevokedOn = DateTime.UtcNow;
-            user.ModifiedBy = revokedByLogin;
-            user.ModifiedOn = DateTime.UtcNow;
+            TouchUser(user, revokedByLogin);
 
             return await Task.FromResult(user);
         }
 
         public async Task<User> RestoreUserAsync(string login, string modifiedByLogin) {
-            User? user = await GetUserByLoginAsync(login);
-            if (user == null) {
-                throw new UserNotFoundException(login);
-            }
+            User user = await GetUserByLoginOrThrowAsync(login);
 
             if (user.RevokedOn != null) {
                 user.RevokedOn = null;
                 user.RevokedBy = null;
             }
 
-            user.ModifiedBy = modifiedByLogin;
-            user.ModifiedOn = DateTime.UtcNow;
+            TouchUser(user, modifiedByLogin);
 
             return await Task.FromResult(user);
-
         }
     }
 }
