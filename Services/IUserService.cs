@@ -20,5 +20,7 @@ namespace UserApi.Services
         Task<User> SoftDeleteUserAsync(string login, string revokedByLogin);
 
         Task<User> RestoreUserAsync(string login, string modifiedByLogin);
+
+        Task<IEnumerable<User>> GetUsersOlderThanAsync(int age, string requestedByLogin);
     }
 }

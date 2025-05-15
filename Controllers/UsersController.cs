@@ -158,6 +158,26 @@ namespace UserApi.Controllers {
             }
         }
 
+        // GET: api/users/older-than/{age}
+        // [Authorize(Roles = "Admin")] 
+        // TODO: расскоментировать после создания аутентификации
+        [HttpGet("older-than/{age}")]
+        public async Task<ActionResult<IEnumerable<UserResponseDto>>> GetUsersOlderThan([FromRoute] int age) {
+            if (age <= 0) {
+                return BadRequest(new { message = "Age can't be a negative" });
+            }
+
+            string requestedByLogin = "Admin"; // TODO: заменить после аутентификации
+            var users = await _userService.GetUsersOlderThanAsync(age, requestedByLogin);
+
+            if (!users.Any()) {
+                return Ok(Enumerable.Empty<UserResponseDto>());
+            }
+
+            var userResponseDtos = users.Select(u => MapUserToResponseDto(u));
+            return Ok(userResponseDtos);
+        }
+
         private UserResponseDto MapUserToResponseDto(User user) {
             return new UserResponseDto {
                 Guid = user.Guid,
