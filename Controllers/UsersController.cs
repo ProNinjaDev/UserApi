@@ -170,7 +170,7 @@ namespace UserApi.Controllers {
             string requestedByLogin = "Admin"; // TODO: заменить после аутентификации
             var users = await _userService.GetUsersOlderThanAsync(age, requestedByLogin);
 
-            if (users == null || !users.Any()) {
+            if (!users.Any()) {
                 return Ok(Enumerable.Empty<UserResponseDto>());
             }
 
