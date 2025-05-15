@@ -178,5 +178,13 @@ namespace UserApi.Services {
 
             return await Task.FromResult(user);
         }
+
+        public async Task<IEnumerable<User>> GetUsersOlderThanAsync(int age, string requestedByLogin) {
+            // TODO: использовать requestedByLogin при авторизации
+            var today = DateTime.UtcNow.Date;
+            var usersOlderThanAge = _users.Values.Where(u => u.RevokedOn == null && u.Birthday != null && u.Birthday.Value.AddYears(age) < today).OrderBy(u => u.CreatedOn).AsEnumerable();
+
+            return await Task.FromResult(usersOlderThanAge);
+        }
     }
 }
