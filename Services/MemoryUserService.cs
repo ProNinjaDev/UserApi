@@ -166,6 +166,13 @@ namespace UserApi.Services {
             return await Task.FromResult(user);
         }
 
+        public async Task HardDeleteUserAsync(string login, string deletedByLogin) {
+            var user = await GetUserByLoginOrThrowAsync(login);
+
+            _users.Remove(user.Guid);
+            _logins.Remove(user.Login);
+        }
+
         public async Task<User> RestoreUserAsync(string login, string modifiedByLogin) {
             User user = await GetUserByLoginOrThrowAsync(login);
 
@@ -185,6 +192,20 @@ namespace UserApi.Services {
             var usersOlderThanAge = _users.Values.Where(u => u.RevokedOn == null && u.Birthday != null && u.Birthday.Value.AddYears(age) < today).OrderBy(u => u.CreatedOn).AsEnumerable();
 
             return await Task.FromResult(usersOlderThanAge);
+        }
+
+        public async Task<User?> GetActiveUserByCredentialsAsync(string login, string password) {
+            var user = await GetUserByLoginAsync(login);
+
+            if (user == null || user.RevokedOn != null) {
+                return null;
+            }
+
+            bool isValidPassword = PasswordHasher.IsMatchPasswords(password, user.PasswordHash, user.PasswordSalt, user.PasswordIterations, user.PasswordHashAlgorithm);
+            if (!isValidPassword) {
+                return null;
+            }
+            return user; // TODO: возможно стоит обернуть в FromResult
         }
     }
 }
