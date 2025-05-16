@@ -22,5 +22,7 @@ namespace UserApi.Services
         Task<User> RestoreUserAsync(string login, string modifiedByLogin);
 
         Task<IEnumerable<User>> GetUsersOlderThanAsync(int age, string requestedByLogin);
+
+        Task<User?> GetActiveUserByCredentialsAsync(string login, string password);
     }
 }

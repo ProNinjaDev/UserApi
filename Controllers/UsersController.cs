@@ -178,6 +178,21 @@ namespace UserApi.Controllers {
             return Ok(userResponseDtos);
         }
 
+        // POST: api/users/authenticate-details
+        [HttpPost("authenticate-details")]
+        public async Task<ActionResult<UserResponseDto>> GetSelftUserDetails([FromBody] UserCredentialsRequestDto credentialsDto) {
+            if (!ModelState.IsValid) {
+                return BadRequest(ModelState);
+            }
+
+            var user = await _userService.GetActiveUserByCredentialsAsync(credentialsDto.Login, credentialsDto.Password);
+            if (user == null) {
+                return Unauthorized(new { message = "Invalid login or password, or user is inactive" });
+            }
+
+            return Ok(MapUserToResponseDto(user));
+        }
+
         private UserResponseDto MapUserToResponseDto(User user) {
             return new UserResponseDto {
                 Guid = user.Guid,

@@ -186,5 +186,19 @@ namespace UserApi.Services {
 
             return await Task.FromResult(usersOlderThanAge);
         }
+
+        public async Task<User?> GetActiveUserByCredentialsAsync(string login, string password) {
+            var user = await GetUserByLoginAsync(login);
+
+            if (user == null || user.RevokedOn != null) {
+                return null;
+            }
+
+            bool isValidPassword = PasswordHasher.IsMatchPasswords(password, user.PasswordHash, user.PasswordSalt, user.PasswordIterations, user.PasswordHashAlgorithm);
+            if (!isValidPassword) {
+                return null;
+            }
+            return user; // TODO: возможно стоит обернуть в FromResult
+        }
     }
 }
