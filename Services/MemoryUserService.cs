@@ -166,6 +166,13 @@ namespace UserApi.Services {
             return await Task.FromResult(user);
         }
 
+        public async Task HardDeleteUserAsync(string login, string deletedByLogin) {
+            var user = await GetUserByLoginOrThrowAsync(login);
+
+            _users.Remove(user.Guid);
+            _logins.Remove(user.Login);
+        }
+
         public async Task<User> RestoreUserAsync(string login, string modifiedByLogin) {
             User user = await GetUserByLoginOrThrowAsync(login);
 

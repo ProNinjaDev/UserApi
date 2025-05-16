@@ -130,18 +130,23 @@ namespace UserApi.Controllers {
             }
         }
 
-        // DELETE: api/users/{login}
+        // DELETE: api/users/{login}?type={soft|hard}
+        // [Authorize(Roles = "Admin")] // TODO: раскомментировать после настройки аутентификации
         [HttpDelete("{login}")]
-        public async Task<IActionResult> SoftDeleteUser([FromRoute] string login) {
+        public async Task<IActionResult> DeleteUser([FromRoute] string login, [FromQuery] string type = "soft") {
             try {
-                string revokedByLogin = "Admin"; // TODO: изменить на логин аутентифицированного админа
-                await _userService.SoftDeleteUserAsync(login, revokedByLogin);
+                string deletedByLogin = "Admin"; // TODO: изменить на логин аутентифицированного админа
+                if ("hard".Equals(type, StringComparison.OrdinalIgnoreCase)) {
+                    await _userService.HardDeleteUserAsync(login, deletedByLogin);
+                }
+                else {
+                    await _userService.SoftDeleteUserAsync(login, deletedByLogin);
+                }
                 return NoContent();
             }
             catch (UserNotFoundException ex) {
                 return NotFound(new { message = ex.Message });
             }
-
         }
 
         // PUT: api/users/{login}/restore
