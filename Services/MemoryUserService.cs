@@ -106,7 +106,7 @@ namespace UserApi.Services {
                 user.Gender = updateUserDto.Gender.Value;
                 isModified = true;
             }
-            if (updateUserDto.Birthday != null) { // FIXME: возможно, лучше создать новый эндпоинт для обработки др
+            if (updateUserDto.Birthday != null) {
                 if (user.Birthday != updateUserDto.Birthday.Value) { // др не очищается
                     user.Birthday = updateUserDto.Birthday.Value;
                     isModified = true;
@@ -187,7 +187,6 @@ namespace UserApi.Services {
         }
 
         public async Task<IEnumerable<User>> GetUsersOlderThanAsync(int age, string requestedByLogin) {
-            // TODO: использовать requestedByLogin при авторизации
             var today = DateTime.UtcNow.Date;
             var usersOlderThanAge = _users.Values.Where(u => u.RevokedOn == null && u.Birthday != null && u.Birthday.Value.AddYears(age) < today).OrderBy(u => u.CreatedOn).AsEnumerable();
 
@@ -205,7 +204,7 @@ namespace UserApi.Services {
             if (!isValidPassword) {
                 return null;
             }
-            return user; // TODO: возможно стоит обернуть в FromResult
+            return user;
         }
     }
 }
