@@ -3,6 +3,7 @@ using UserApi.Models;
 using UserApi.Services;
 using UserApi.DTOs;
 using UserApi.Exceptions;
+using Microsoft.AspNetCore.Authorization;
 
 namespace UserApi.Controllers {
     [ApiController]
@@ -16,10 +17,13 @@ namespace UserApi.Controllers {
 
         // GET: api/users
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<UserResponseDto>>> GetAllUsers() {
+        [Authorize]
+        public async Task<ActionResult<IEnumerable<UserResponseDto>>> GetAllUsers()
+        {
             var users = await _userService.GetAllUsersAsync();
 
-            if (users == null) {
+            if (users == null)
+            {
                 return Ok(Enumerable.Empty<UserResponseDto>());
             }
 
