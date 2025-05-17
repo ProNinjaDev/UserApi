@@ -52,8 +52,14 @@ namespace UserApi.Controllers {
                 return BadRequest(ModelState);
             }
 
+            var currentAdminLogin = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(currentAdminLogin))
+            {
+                return Unauthorized(new { message = "Cannot identify administrator from token" });
+            }
+
             try {
-                var newCreatedUser = await _userService.CreateUserAsync(createUserDto, "Admin"); // TODO: возможно CreatedBy нужен другой
+                var newCreatedUser = await _userService.CreateUserAsync(createUserDto, currentAdminLogin);
 
                 var userResponseDto = MapUserToResponseDto(newCreatedUser);
 
@@ -173,13 +179,17 @@ namespace UserApi.Controllers {
         [HttpDelete("{login}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteUser([FromRoute] string login, [FromQuery] string type = "soft") {
+            var currentAdminLogin = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(currentAdminLogin))
+            {
+                return Unauthorized(new { message = "Cannot identify administrator from token" });
+            }
+
             try {
-                string deletedByLogin = "Admin"; // TODO: изменить на логин аутентифицированного админа
                 if ("hard".Equals(type, StringComparison.OrdinalIgnoreCase)) {
-                    await _userService.HardDeleteUserAsync(login, deletedByLogin);
-                }
-                else {
-                    await _userService.SoftDeleteUserAsync(login, deletedByLogin);
+                    await _userService.HardDeleteUserAsync(login, currentAdminLogin);
+                } else {
+                    await _userService.SoftDeleteUserAsync(login, currentAdminLogin);
                 }
                 return NoContent();
             }
@@ -192,9 +202,14 @@ namespace UserApi.Controllers {
         [HttpPut("{login}/restore")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> RestoreUser([FromRoute] string login) {
+            var currentAdminLogin = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(currentAdminLogin))
+            {
+                return Unauthorized(new { message = "Cannot identify administrator from token" });
+            }
+
             try {
-                string modifiedByLogin = "Admin"; // TODO: изменить на логин аутентифицированного админа
-                var restoredUser = await _userService.RestoreUserAsync(login, modifiedByLogin);
+                var restoredUser = await _userService.RestoreUserAsync(login, currentAdminLogin);
 
                 return Ok(MapUserToResponseDto(restoredUser));
             }
@@ -211,8 +226,13 @@ namespace UserApi.Controllers {
                 return BadRequest(new { message = "Age can't be a negative" });
             }
 
-            string requestedByLogin = "Admin"; // TODO: заменить после аутентификации
-            var users = await _userService.GetUsersOlderThanAsync(age, requestedByLogin);
+            var currentAdminLogin = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(currentAdminLogin))
+            {
+                return Unauthorized(new { message = "Cannot identify administrator from token" });
+            }
+
+            var users = await _userService.GetUsersOlderThanAsync(age, currentAdminLogin);
 
             if (!users.Any()) {
                 return Ok(Enumerable.Empty<UserResponseDto>());
