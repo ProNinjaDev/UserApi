@@ -17,7 +17,7 @@ namespace UserApi.Controllers {
 
         // GET: api/users
         [HttpGet]
-        [Authorize]
+        [Authorize(Roles = "Admin")] // Изменено с [Authorize] на [Authorize(Roles = "Admin")]
         public async Task<ActionResult<IEnumerable<UserResponseDto>>> GetAllUsers()
         {
             var users = await _userService.GetAllUsersAsync();
@@ -32,7 +32,8 @@ namespace UserApi.Controllers {
         }
 
         // GET: api/users/{login}
-        [HttpGet("{login}")] 
+        [HttpGet("{login}")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<UserResponseDto>> GetUserByLogin([FromRoute] string login) {
             var user = await _userService.GetUserByLoginAsync(login);
             
@@ -45,6 +46,7 @@ namespace UserApi.Controllers {
 
         // POST: api/users
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateUser([FromBody] CreateUserRequestDto createUserDto) {
             if (!ModelState.IsValid) {
                 return BadRequest(ModelState);
@@ -65,6 +67,7 @@ namespace UserApi.Controllers {
 
         // PUT: api/users/{login} 
         [HttpPut("{login}")]
+        [Authorize]
         public async Task<IActionResult> UpdateUserInfo([FromRoute] string login,
             [FromBody] UpdateUserInfoRequestDto updateUserDto) {
 
@@ -72,12 +75,22 @@ namespace UserApi.Controllers {
                 return BadRequest(ModelState);
             }
 
-            try {
-                var currentUserLogin = "Admin"; // TODO: заменить при аутентификации
-                var userExisting = await _userService.GetUserByLoginAsync(login);
+            var currentLoggedInUser = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
-                // TODO: добавить проверки при аутентификации
-                var userUpdated = await _userService.UpdateUserInfoAsync(login, updateUserDto, currentUserLogin);
+            if (string.IsNullOrEmpty(currentLoggedInUser))
+            {
+                return Unauthorized(new { message = "Cannot identify current user from token" });
+            }
+
+            if (!User.IsInRole("Admin") && !string.Equals(currentLoggedInUser, login, StringComparison.OrdinalIgnoreCase))
+            {
+                return Forbid();
+            }
+
+            try {
+                // var userExisting = await _userService.GetUserByLoginAsync(login);
+
+                var userUpdated = await _userService.UpdateUserInfoAsync(login, updateUserDto, currentLoggedInUser);
 
                 return NoContent();
             }
@@ -88,40 +101,62 @@ namespace UserApi.Controllers {
 
         // PUT: api/users/{login}/password
         [HttpPut("{login}/password")]
+        [Authorize]
         public async Task<IActionResult> UpdateUserPassword([FromRoute] string login,
             [FromBody] UpdateUserPasswordRequestDto updatePasswordDto) {
             
             if (!ModelState.IsValid) {
                 return BadRequest(ModelState);
             }
+            
+            var currentLoggedInUser = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
-            try {
-                var currentUserLogin = "Admin"; // TODO: заменить после аутентификации
+            if (string.IsNullOrEmpty(currentLoggedInUser))
+            {
+                return Unauthorized(new { message = "Cannot identify current user from token" });
+            }
 
-                var userExisting = await _userService.GetUserByLoginAsync(login);
+            if (!User.IsInRole("Admin") && !string.Equals(currentLoggedInUser, login, StringComparison.OrdinalIgnoreCase))
+            {
+                return Forbid();
+            }
 
-                var userUpdated = await _userService.UpdateUserPasswordAsync(login, updatePasswordDto.NewPassword, currentUserLogin);
+            try
+            {
+                var userUpdated = await _userService.UpdateUserPasswordAsync(login, updatePasswordDto.NewPassword, currentLoggedInUser);
                 return NoContent();
             }
-            catch (UserNotFoundException ex) {
+            catch (UserNotFoundException ex)
+            {
                 return NotFound(new { message = ex.Message });
             }
         }
 
         // PUT: api/users/{login}/login
         [HttpPut("{login}/login")]
+        [Authorize]
         public async Task<IActionResult> UpdateUserLogin([FromRoute] string login,
             [FromBody] UpdateUserLoginRequestDto updateLoginDto) {
             
             if (!ModelState.IsValid) {
                 return BadRequest(ModelState);
             }
+            
+            var currentLoggedInUser = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
-            try {
-                var currentUserLogin = "Admin"; // TODO: заменить после аутентификации
-                var userExisting = await _userService.GetUserByLoginAsync(login);
+            if (string.IsNullOrEmpty(currentLoggedInUser))
+            {
+                return Unauthorized(new { message = "Cannot identify current user from token" });
+            }
 
-                var userUpdated = await _userService.UpdateUserLoginAsync(login, updateLoginDto.NewLogin, currentUserLogin);
+            if (!User.IsInRole("Admin") && !string.Equals(currentLoggedInUser, login, StringComparison.OrdinalIgnoreCase))
+            {
+                return Forbid();
+            }
+
+            try
+            {
+                var userUpdated = await _userService.UpdateUserLoginAsync(login, updateLoginDto.NewLogin, currentLoggedInUser);
                 return NoContent();
             }
             catch (UserNotFoundException ex)
@@ -134,9 +169,9 @@ namespace UserApi.Controllers {
             }
         }
 
-        // DELETE: api/users/{login}?type={soft|hard}
-        // [Authorize(Roles = "Admin")] // TODO: раскомментировать после настройки аутентификации
+        // DELETE: api/users/{login}?type={soft|hard} 
         [HttpDelete("{login}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteUser([FromRoute] string login, [FromQuery] string type = "soft") {
             try {
                 string deletedByLogin = "Admin"; // TODO: изменить на логин аутентифицированного админа
@@ -155,6 +190,7 @@ namespace UserApi.Controllers {
 
         // PUT: api/users/{login}/restore
         [HttpPut("{login}/restore")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> RestoreUser([FromRoute] string login) {
             try {
                 string modifiedByLogin = "Admin"; // TODO: изменить на логин аутентифицированного админа
@@ -168,9 +204,8 @@ namespace UserApi.Controllers {
         }
 
         // GET: api/users/older-than/{age}
-        // [Authorize(Roles = "Admin")] 
-        // TODO: расскоментировать после создания аутентификации
         [HttpGet("older-than/{age}")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<IEnumerable<UserResponseDto>>> GetUsersOlderThan([FromRoute] int age) {
             if (age <= 0) {
                 return BadRequest(new { message = "Age can't be a negative" });
